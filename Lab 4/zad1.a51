@@ -1,25 +1,25 @@
-ljmp start                      ; Skok bezwarunkowy do etykiety 'start' (początek programu głównego)
+ljmp start
 
-P5 equ 0F8H                     ; Zdefiniowanie adresu portu P5 (sterowanie wierszami klawiatury)
-P7 equ 0DBH                     ; Zdefiniowanie adresu portu P7 (odczyt kolumn klawiatury)
+P5 equ 0F8H
+P7 equ 0DBH
 	
-LCDstatus  equ 0FF2EH           ; Zdefiniowanie adresu do odczytu flagi gotowości wyświetlacza LCD
-LCDcontrol equ 0FF2CH           ; Zdefiniowanie adresu do wysyłania komend sterujących do LCD
-LCDdataWR  equ 0FF2DH           ; Zdefiniowanie adresu do wysyłania danych (znaków ASCII) do LCD
+LCDstatus  equ 0FF2EH       ; adres do odczytu gotowosci LCD
+LCDcontrol equ 0FF2CH       ; adres do podania bajtu sterujacego LCD
+LCDdataWR  equ 0FF2DH       ; adres do podania kodu ASCII na LCD
 
 // bajty sterujace LCD, inne dostepne w opisie LCD na stronie WWW
-#define  HOME     0x80          // Makro: komenda powrotu kursora na początek pierwszej linii
-#define  INITDISP 0x38          // Makro: komenda inicjalizacji LCD w trybie 8-bitowym
-#define  HOM2     0xc0          // Makro: komenda przejścia kursora na początek drugiej linii
-#define  LCDON    0x0e          // Makro: komenda włączenia LCD, wyłączenia kursora i jego migania
-#define  CLEAR    0x01          // Makro: komenda wyczyszczenia całego ekranu LCD
+#define  HOME     0x80     // put cursor to second line  
+#define  INITDISP 0x38     // LCD init (8-bit mode)  
+#define  HOM2     0xc0     // put cursor to second line  
+#define  LCDON    0x0e     // LCD nn, cursor off, blinking off
+#define  CLEAR    0x01     // LCD display clear
 
 // linie klawiatury - sterowanie na port P5
-#define LINE_1		0x7f        // Makro: maska dla 1. wiersza klawiatury (0111 1111)
-#define LINE_2		0xbf        // Makro: maska dla 2. wiersza klawiatury (1011 1111)
-#define	LINE_3		0xdf        // Makro: maska dla 3. wiersza klawiatury (1101 1111)
-#define LINE_4		0xef        // Makro: maska dla 4. wiersza klawiatury (1110 1111)
-#define ALL_LINES	0x0f        // Makro: maska dla wszystkich wierszy (0000 1111)
+#define LINE_1		0x7f	// 0111 1111
+#define LINE_2		0xbf	// 1011 1111
+#define	LINE_3		0xdf	// 1101 1111
+#define LINE_4		0xef	// 1110 1111
+#define ALL_LINES	0x0f	// 0000 1111
 
 org 0100H                       ; Ustawienie licznika programu na adres 0100H (od tego miejsca kompilowany jest kod)
 		
