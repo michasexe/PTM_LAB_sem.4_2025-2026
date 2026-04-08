@@ -1,25 +1,25 @@
-ljmp start                      ; Skok bezwarunkowy do etykiety 'start' (początek programu)
+ljmp start
 
-P5 equ 0F8H                     ; Adres portu P5 (używany do aktywacji wierszy klawiatury)
-P7 equ 0DBH                     ; Adres portu P7 (używany do odczytu stanu kolumn klawiatury)
+P5 equ 0F8H
+P7 equ 0DBH
 	
-LCDstatus  equ 0FF2EH           ; Adres pamięci przypisany do odczytu statusu wyświetlacza LCD (Busy Flag)
-LCDcontrol equ 0FF2CH           ; Adres pamięci przypisany do wysyłania komend sterujących LCD
-LCDdataWR  equ 0FF2DH           ; Adres pamięci przypisany do wysyłania danych (znaków ASCII) na LCD
+LCDstatus  equ 0FF2EH       ; adres do odczytu gotowosci LCD
+LCDcontrol equ 0FF2CH       ; adres do podania bajtu sterujacego LCD
+LCDdataWR  equ 0FF2DH       ; adres do podania kodu ASCII na LCD
 
 // bajty sterujace LCD, inne dostepne w opisie LCD na stronie WWW
-#define  HOME     0x80          // Komenda: powrót kursora na początek 1. linii
-#define  INITDISP 0x38          // Komenda: inicjalizacja LCD, interfejs 8-bitowy, 2 linie, znak 5x7
-#define  HOM2     0xc0          // Komenda: przejście kursora na początek 2. linii
-#define  LCDON    0x0e          // Komenda: włącz wyświetlacz, włącz kursor, wyłącz miganie
-#define  CLEAR    0x01          // Komenda: wyczyść cały ekran
+#define  HOME     0x80     // put cursor to second line  
+#define  INITDISP 0x38     // LCD init (8-bit mode)  
+#define  HOM2     0xc0     // put cursor to second line  
+#define  LCDON    0x0e     // LCD nn, cursor off, blinking off
+#define  CLEAR    0x01     // LCD display clear
 
 // linie klawiatury - sterowanie na port P5
-#define LINE_1		0x7f        // Maska aktywująca 1. wiersz klawiatury (0111 1111)
-#define LINE_2		0xbf        // Maska aktywująca 2. wiersz klawiatury (1011 1111)
-#define	LINE_3		0xdf        // Maska aktywująca 3. wiersz klawiatury (1101 1111)
-#define LINE_4		0xef        // Maska aktywująca 4. wiersz klawiatury (1110 1111)
-#define ALL_LINES	0x0f        // Maska dla wszystkich wierszy (0000 1111)
+#define LINE_1		0x7f	// 0111 1111
+#define LINE_2		0xbf	// 1011 1111
+#define	LINE_3		0xdf	// 1101 1111
+#define LINE_4		0xef	// 1110 1111
+#define ALL_LINES	0x0f	// 0000 1111
 
 org 0100H                       ; Ustawienie początkowego adresu kompilacji programu na 0x0100
 		
