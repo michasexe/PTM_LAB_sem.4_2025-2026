@@ -173,6 +173,7 @@ keyascii:	mov dptr, #80EBH    ; Ustaw adres dla 1. klawisza
 			acall putcharLCD    ; Wypisz ten znak na ekranie LCD
 			acall delay         ; Opóźnienie eliminujące drgania styków klawisza
 			dec r7              ; Odlicz 1 znak z bieżącej linii
+			ljmp check_chars
 			
 	key_2:	mov r0, #LINE_2     ; Załaduj maskę 2. wiersza
 			mov	a, r0           ; Skopiuj do A
@@ -191,6 +192,7 @@ keyascii:	mov dptr, #80EBH    ; Ustaw adres dla 1. klawisza
 			acall putcharLCD    ; Pokaż na LCD
 			acall delay         ; Odczekaj chwilę
 			dec r7              ; Zmniejsz dostępną ilość miejsc o 1
+			ljmp check_chars
 			
 	key_3:	mov r0, #LINE_3     ; Załaduj maskę 3. wiersza
 			mov	a, r0           ; Kopiuj do A
@@ -209,6 +211,7 @@ keyascii:	mov dptr, #80EBH    ; Ustaw adres dla 1. klawisza
 			acall putcharLCD    ; Wypisanie
 			acall delay         ; Opóźnienie debouncingowe
 			dec r7              ; Aktualizacja licznika znaków
+			ljmp check_chars
 			
 	key_4:	mov r0, #LINE_4     ; Załaduj maskę 4. wiersza
 			mov	a, r0           ; Skopiuj
