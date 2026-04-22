@@ -366,4 +366,3 @@ CZEKAM:
 		ljmp ostatniedwie
 
 END START
-END START
