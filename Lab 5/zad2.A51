@@ -232,7 +232,7 @@ START:	init_LCD
 		MOV TMOD, #01H 			; konfiguracja timera
 		MOV TH0, #3CH 			; ladowanie
 		MOV TL0, #0B0H 			; stalej timera na 50ms
-		SETB TR0     			; timer start
+		;SETB TR0     			; timer start
 		MOV IE, #82H  			; przerwania wlacz
 		MOV R5, #00H			; inicjacja zegara
 		MOV R6, #00H
@@ -315,10 +315,10 @@ CZEKAM:
 			movx a, @dptr
 			clr c
 			subb a, #"#"
-			jz ustawgodzine
+			jz ZATWIERDZ_I_START    ; Skok po wciśnięciu #
 			movx a, @dptr
 			subb a, #"*"
-			jz ustawminute
+			jz ZAPISZ_GODZINY       ; Skok po wciśnięciu *
 			movx a, @dptr
 			jz jumpostatniedwie
 		
@@ -337,24 +337,33 @@ CZEKAM:
 		NOP
 		JMP $
 
-	ustawgodzine:
+	ZAPISZ_GODZINY:
 		mov a, r4
 		mov b, #10
 		mul ab
 		add a, r3
 		mov b, #24
 		div ab
-		mov r5, b
+		mov r5, b           ; zapisz do godzin (R5)
+		mov r3, #0          ; wyzeruj bufor jedności
+		mov r4, #0          ; wyzeruj bufor dziesiątek
 		ljmp key_1
-	ustawminute:
+
+	ZATWIERDZ_I_START:
 		mov a, r4
 		mov b, #10
 		mul ab
 		add a, r3
 		mov b, #60
 		div ab
-		mov r6, b
+		mov r6, b           ; zapisz do minut (R6)
+		mov r3, #0          ; wyzeruj bufor jedności
+		mov r4, #0          ; wyzeruj bufor dziesiątek
+		SETB TR0            ; START TIMERA - rozpoczynamy odliczanie!
 		ljmp key_1
+
 	jumpostatniedwie:
 		ljmp ostatniedwie
+
+END START
 END START
