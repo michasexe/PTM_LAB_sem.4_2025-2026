@@ -129,7 +129,7 @@ CZEKAM:
         SETB TR0          ; P3.0 - START TIMERA
 
 stop_timer:
-        JB P3.1, check_plus
+        JB P3.1, CZEKAJ_PLUS
         CLR TR0           ; P3.1 - STOP TIMERA
 
 CZEKAJ_PLUS:
