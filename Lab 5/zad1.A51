@@ -136,7 +136,7 @@ dodaj_godziene:
         JB P3.2, odejmi_godzine
         INC R5            ; P3.2 - Godzina in plus
         MOV A, R5
-        CJNE A, #24, skip_p
+        CJNE A, #24, SKIP_PLUS
         MOV R5, #00H
 SKIP_PLUS: ACALL EKRAN       ; Zaktualizuj LCD
 CZEKAJ_PLUS: 
@@ -146,7 +146,7 @@ odejmi_godzine:
         JB P3.3, CZEKAM
         DEC R5            ; P3.3 - Godzina in minus
         MOV A, R5
-        CJNE A, #0FFH, skip_m
+        CJNE A, #0FFH, SKIP_MINUS
         MOV R5, #23
 SKIP_MINUS: ACALL EKRAN       ; Zaktualizuj LCD
 CZEKAJ_MINUS: 
