@@ -132,8 +132,8 @@ stop_timer:
         JB P3.1, CZEKAJ_PLUS
         CLR TR0           ; P3.1 - STOP TIMERA
 
-dodaj_godziene:
-        JB P3.2, odejmi_godzine
+dodaj_godzine:
+        JB P3.2, odejmij_godzine
         INC R5            ; P3.2 - Godzina in plus
         MOV A, R5
         CJNE A, #24, SKIP_PLUS
@@ -142,7 +142,7 @@ SKIP_PLUS: ACALL EKRAN       ; Zaktualizuj LCD
 CZEKAJ_PLUS: 
 		JNB P3.2, CZEKAJ_PLUS  ; Czekaj na puszczenie guzika
 
-odejmi_godzine:
+odejmij_godzine:
         JB P3.3, CZEKAM
         DEC R5            ; P3.3 - Godzina in minus
         MOV A, R5
