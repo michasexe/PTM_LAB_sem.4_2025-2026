@@ -125,33 +125,32 @@ START:	init_LCD
 		MOV R0, #20 			; licznik odmierzen 20 x 50ms
 
 CZEKAM: 
-        ; --- OBSLUGA KLAWISZY NA P3 ---
-        JB P3.0, check_stop
+        JB P3.0, stop_timer
         SETB TR0          ; P3.0 - START TIMERA
 
-check_stop:
+stop_timer:
         JB P3.1, check_plus
         CLR TR0           ; P3.1 - STOP TIMERA
 
-check_plus:
-        JB P3.2, check_minus
+CZEKAJ_PLUS:
+        JB P3.2, CZEKAJ_MINUS
         INC R5            ; P3.2 - Godzina in plus
         MOV A, R5
         CJNE A, #24, skip_p
         MOV R5, #00H
-skip_p: ACALL EKRAN       ; Zaktualizuj LCD
+SKIP_PLUS: ACALL EKRAN       ; Zaktualizuj LCD
 wait_p: JNB P3.2, wait_p  ; Czekaj na puszczenie guzika
 
-check_minus:
-        JB P3.3, check_timer
+CZEKAJ_MINUS:
+        JB P3.3, pomin
         DEC R5            ; P3.3 - Godzina in minus
         MOV A, R5
         CJNE A, #0FFH, skip_m
         MOV R5, #23
-skip_m: ACALL EKRAN       ; Zaktualizuj LCD
+SKIP_MINUS: ACALL EKRAN       ; Zaktualizuj LCD
 wait_m: JNB P3.3, wait_m  ; Czekaj na puszczenie guzika
 
-check_timer:
+pomin:
 		MOV A, R0   			; czekam, a timer
 		JNZ CZEKAM   			; mierzy laczny czas 1s
 		MOV R0, #20				; po zgloszeniu przerwania - ustawiam na nowo
