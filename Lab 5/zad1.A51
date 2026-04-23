@@ -124,7 +124,7 @@ START:	init_LCD
 		MOV P1, A    			; zapalenie diód
 		MOV R0, #20 			; licznik odmierzen 20 x 50ms
 
-CZEKAM: 
+sprawdz_timer: 
         JB P3.0, stop_timer
         SETB TR0          ; P3.0 - START TIMERA
 
@@ -142,7 +142,7 @@ SKIP_PLUS: ACALL EKRAN       ; Zaktualizuj LCD
 wait_p: JNB P3.2, wait_p  ; Czekaj na puszczenie guzika
 
 CZEKAJ_MINUS:
-        JB P3.3, pomin
+        JB P3.3, CZEKAM
         DEC R5            ; P3.3 - Godzina in minus
         MOV A, R5
         CJNE A, #0FFH, skip_m
@@ -150,13 +150,13 @@ CZEKAJ_MINUS:
 SKIP_MINUS: ACALL EKRAN       ; Zaktualizuj LCD
 wait_m: JNB P3.3, wait_m  ; Czekaj na puszczenie guzika
 
-pomin:
+CZEKAM:
 		MOV A, R0   			; czekam, a timer
-		JNZ CZEKAM   			; mierzy laczny czas 1s
+		JNZ sprawdz_timer   			; mierzy laczny czas 1s
 		MOV R0, #20				; po zgloszeniu przerwania - ustawiam na nowo
 		ACALL ZEGAR				; uruchomienie procedury oblugi i wyswietlenia zegara
 		MOV A, P1  				; zmiana
 		CPL A       			; swiecenia
 		MOV P1, A    			; diód
-		JMP CZEKAM    			; czekam na kolejna sekunde
+		JMP sprawdz_timer    			; czekam na kolejna sekunde
 END START
