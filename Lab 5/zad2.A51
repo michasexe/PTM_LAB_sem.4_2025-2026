@@ -87,22 +87,69 @@ putcharLCD:
 
 // tablica przekodowania klawisze - ASCII w XRAM
 keyascii_num: 
-    mov dptr, #80EBH \ mov a, #0 \ movx @dptr, a
-    mov dptr, #8077H \ mov a, #1 \ movx @dptr, a
-    mov dptr, #807BH \ mov a, #2 \ movx @dptr, a
-    mov dptr, #807DH \ mov a, #3 \ movx @dptr, a
-    mov dptr, #80B7H \ mov a, #4 \ movx @dptr, a
-    mov dptr, #80BBH \ mov a, #5 \ movx @dptr, a
-    mov dptr, #80BDH \ mov a, #6 \ movx @dptr, a
-    mov dptr, #80D7H \ mov a, #7 \ movx @dptr, a
-    mov dptr, #80DBH \ mov a, #8 \ movx @dptr, a
-    mov dptr, #80DDH \ mov a, #9 \ movx @dptr, a
-    mov dptr, #807EH \ mov a, #"A" \ movx @dptr, a
-    mov dptr, #80BEH \ mov a, #"B" \ movx @dptr, a
-    mov dptr, #80DEH \ mov a, #"C" \ movx @dptr, a
-    mov dptr, #80EEH \ mov a, #"D" \ movx @dptr, a
-    mov dptr, #80E7H \ mov a, #"*" \ movx @dptr, a
-    mov dptr, #80EDH \ mov a, #"#" \ movx @dptr, a
+    mov dptr, #80EBH
+    mov a, #0
+    movx @dptr, a
+    
+    mov dptr, #8077H
+    mov a, #1
+    movx @dptr, a
+    
+    mov dptr, #807BH
+    mov a, #2
+    movx @dptr, a
+    
+    mov dptr, #807DH
+    mov a, #3
+    movx @dptr, a
+    
+    mov dptr, #80B7H
+    mov a, #4
+    movx @dptr, a
+    
+    mov dptr, #80BBH
+    mov a, #5
+    movx @dptr, a
+    
+    mov dptr, #80BDH
+    mov a, #6
+    movx @dptr, a
+    
+    mov dptr, #80D7H
+    mov a, #7
+    movx @dptr, a
+    
+    mov dptr, #80DBH
+    mov a, #8
+    movx @dptr, a
+    
+    mov dptr, #80DDH
+    mov a, #9
+    movx @dptr, a
+    
+    mov dptr, #807EH
+    mov a, #"A"
+    movx @dptr, a
+    
+    mov dptr, #80BEH
+    mov a, #"B"
+    movx @dptr, a
+    
+    mov dptr, #80DEH
+    mov a, #"C"
+    movx @dptr, a
+    
+    mov dptr, #80EEH
+    mov a, #"D"
+    movx @dptr, a
+    
+    mov dptr, #80E7H
+    mov a, #"*"
+    movx @dptr, a
+    
+    mov dptr, #80EDH
+    mov a, #"#"
+    movx @dptr, a
     ret
 
 // wyznaczanie biezacej wartosci zegara i jego wyswietlanie na LCD
