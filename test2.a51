@@ -173,12 +173,13 @@ ZEGAR:
     ACALL putcharLCD
     MOV A, R7               ; sekundy
     ACALL putdigitLCD
+    
     LCDcntrlWR #HOM2
-    mov a, r4               ; poprawka: wypisanie dziesiatek wpisywanej liczby
-    add a, #30H
+    mov a, r4
+    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
     acall putcharLCD
-    mov a, r3               ; poprawka: wypisanie jednosci wpisywanej liczby
-    add a, #30H
+    mov a, r3
+    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
     acall putcharLCD
     JMP FINAL
 
@@ -201,12 +202,13 @@ MINUTY:
     ACALL putcharLCD
     MOV A, R7               ; sekundy
     ACALL putdigitLCD
+    
     LCDcntrlWR #HOM2
-    mov a, r4               ; poprawka
-    add a, #30H
+    mov a, r4
+    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
     acall putcharLCD
-    mov a, r3               ; poprawka
-    add a, #30H
+    mov a, r3
+    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
     acall putcharLCD
     JMP FINAL
 
@@ -231,12 +233,13 @@ EKRAN:
     ACALL putcharLCD
     MOV A, R7               ; sekundy
     ACALL putdigitLCD
+    
     LCDcntrlWR #HOM2
-    mov a, r4               ; poprawka
-    add a, #30H
+    mov a, r4
+    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
     acall putcharLCD
-    mov a, r3               ; poprawka
-    add a, #30H
+    mov a, r3
+    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
     acall putcharLCD
 
 FINAL: 
@@ -256,7 +259,7 @@ START:
     MOV TMOD, #01H          ; konfiguracja timera
     MOV TH0, #3CH           ; ladowanie
     MOV TL0, #0B0H          ; stalej timera na 50ms
-    SETB TR0                ; timer start
+    CLR TR0                 ; ZMIANA: timer domyslnie wylaczony (czekamy na ust. czasu i klawisz 'A')
     MOV IE, #82H            ; przerwania wlacz
     MOV R5, #00H            ; inicjacja zegara
     MOV R6, #00H
@@ -289,7 +292,7 @@ key_1:
     jnz ostatniedwie
     MOV TH0, #3CH           ; ladowanie
     MOV TL0, #0B0H          ; stalej timera na 50ms
-    SETB TR0                ; timer start
+    SETB TR0                ; timer start po nacisnieciu klawisza A
 
 key_2: 
     mov r1, #LINE_2
@@ -308,7 +311,7 @@ key_2:
     clr c
     subb a, #"B"
     jnz jumpostatniedwie
-    clr TR0
+    clr TR0                 ; zatrzymanie po klawiszu B
 
 key_3: 
     mov r1, #LINE_3
@@ -338,6 +341,8 @@ key_4:
     mov r2, a
     clr c
     subb a, r1
+    jz sprawdz_timer        ; ZMIANA: Skok gdy zaden przycisk nie jest wcisniety
+    
     mov a, r2
     mov dph, #80h
     mov dpl, a
@@ -346,54 +351,75 @@ key_4:
     subb a, #"#"
     jz ustawgodzine
     movx a, @dptr
+    clr c
     subb a, #"*"
     jz ustawminute
     movx a, @dptr
     jz jumpostatniedwie
     
-    MOV A, R0               ; czekam, a timer
-    JNZ CZEKAM              ; mierzy laczny czas 1s
+sprawdz_timer:              ; ZMIANA: Restrukturyzacja, by uniknac 'target out of range'
+    MOV A, R0               
+    JZ ODLICZONO_1S
+    LJMP CZEKAM             ; jesli R0 != 0, po prostu zrob nastepny obieg
+    
+ODLICZONO_1S:
     MOV R0, #20             ; po zgloszeniu przerwania - ustawiam na nowo licznik odmierzen 20 x 50ms
     ACALL ZEGAR             ; uruchomienie procedury oblugi i wyswietlenia zegara
     MOV A, P1               ; zmiana
     CPL A                   ; swiecenia
     MOV P1, A               ; diód
-    JMP CZEKAM              ; czekam na kolejna sekunde
-    NOP
-    NOP
-    NOP
-    JMP $
+    LJMP CZEKAM             ; czekam na kolejna sekunde
 
 ustawgodzine:
+czekaj_puszcz_h:            ; ZMIANA: czekanie na zwolnienie klawisza #
+    mov a, #LINE_4
+    mov P5, a
+    mov a, P7
+    anl a, #LINE_4
+    clr c
+    subb a, #LINE_4
+    jnz czekaj_puszcz_h
+    
     mov a, r4
     mov b, #10
     mul ab
-    add a, r3               ; wyliczona wartosc
-    mov r2, a               ; tymczasowa kopia wpisanej wartosci
+    add a, r3
+    mov r2, a
     clr c
-    subb a, #24             ; sprawdzenie czy < 24
-    jnc blad_h              ; jesli nie (>= 24), omin zapis
-    mov a, r2               
-    mov r5, a               ; poprawna wartosc wgrywana do godzin
-    mov r3, #0              ; wyczyszczenie bufora na LCD po zapisie
+    subb a, #24             ; ZMIANA: limit 24 zamiast modulo
+    jnc pomin_h
+    mov a, r2
+    mov r5, a
+    mov r3, #0              ; ZMIANA: wyzerowanie po wpisaniu
     mov r4, #0
-blad_h:
+    acall EKRAN             ; ZMIANA: wymuszenie rysowania od razu
+pomin_h:
     ljmp key_1
 
 ustawminute:
+czekaj_puszcz_m:            ; ZMIANA: czekanie na zwolnienie klawisza *
+    mov a, #LINE_4
+    mov P5, a
+    mov a, P7
+    anl a, #LINE_4
+    clr c
+    subb a, #LINE_4
+    jnz czekaj_puszcz_m
+    
     mov a, r4
     mov b, #10
     mul ab
-    add a, r3               ; wyliczona wartosc
-    mov r2, a               ; tymczasowa kopia wpisanej wartosci
+    add a, r3
+    mov r2, a
     clr c
-    subb a, #60             ; sprawdzenie czy < 60
-    jnc blad_m              ; jesli nie (>= 60), omin zapis
+    subb a, #60             ; ZMIANA: limit 60 zamiast modulo
+    jnc pomin_m
     mov a, r2
-    mov r6, a               ; poprawna wartosc wgrywana do minut
-    mov r3, #0              ; wyczyszczenie bufora na LCD po zapisie
+    mov r6, a
+    mov r3, #0              ; ZMIANA: wyzerowanie po wpisaniu
     mov r4, #0
-blad_m:
+    acall EKRAN             ; ZMIANA: wymuszenie rysowania od razu
+pomin_m:
     ljmp key_1
 
 jumpostatniedwie:
