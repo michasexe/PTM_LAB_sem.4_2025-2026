@@ -34,7 +34,8 @@ LCDcntrlWR MACRO x          ; x – parametr wywolania macra – bajt sterujacy
 loop: 
     MOV DPTR, #LCDstatus    ; DPTR zaladowany adresem statusu
     MOVX A, @DPTR           ; pobranie bajtu z biezacym statusem LCD
-    JB ACC.7, loop          ; testowanie najstarszego bitu akumulatora wskazuje gotowosc LCD
+    JB ACC.7, loop          ; testowanie najstarszego bitu akumulatora
+                            ; – wskazuje gotowosc LCD
     MOV DPTR, #LCDcontrol   ; DPTR zaladowany adresem do podania bajtu sterujacego
     MOV A, x                ; do akumulatora trafia argument wywolania macra–bajt sterujacy
     MOVX @DPTR, A           ; bajt sterujacy podany do LCD – zadana akcja widoczna na LCD
@@ -47,7 +48,8 @@ LCDcharWR MACRO
 tutu: 
     MOV DPTR, #LCDstatus    ; DPTR zaladowany adresem statusu
     MOVX A, @DPTR           ; pobranie bajtu z biezacym statusem LCD
-    JB ACC.7, tutu          ; testowanie najstarszego bitu akumulatora wskazuje gotowosc LCD
+    JB ACC.7, tutu          ; testowanie najstarszego bitu akumulatora
+                            ; – wskazuje gotowosc LCD
     MOV DPTR, #LCDdataWR    ; DPTR zaladowany adresem do podania bajtu sterujacego
     POP ACC                 ; w akumulatorze ponownie kod ASCII znaku na LCD
     MOVX @DPTR, A           ; kod ASCII podany do LCD – znak widoczny na LCD
@@ -172,10 +174,12 @@ ZEGAR:
     MOV A, R7               ; sekundy
     ACALL putdigitLCD
     LCDcntrlWR #HOM2
-    mov a, r4
-    acall putdigitLCD
-    mov a, r3
-    acall putdigitLCD
+    mov a, r4               ; poprawka: wypisanie dziesiatek wpisywanej liczby
+    add a, #30H
+    acall putcharLCD
+    mov a, r3               ; poprawka: wypisanie jednosci wpisywanej liczby
+    add a, #30H
+    acall putcharLCD
     JMP FINAL
 
 MINUTY: 
@@ -198,10 +202,12 @@ MINUTY:
     MOV A, R7               ; sekundy
     ACALL putdigitLCD
     LCDcntrlWR #HOM2
-    mov a, r4
-    acall putdigitLCD
-    mov a, r3
-    acall putdigitLCD
+    mov a, r4               ; poprawka
+    add a, #30H
+    acall putcharLCD
+    mov a, r3               ; poprawka
+    add a, #30H
+    acall putcharLCD
     JMP FINAL
 
 GODZINY: 
@@ -226,53 +232,25 @@ EKRAN:
     MOV A, R7               ; sekundy
     ACALL putdigitLCD
     LCDcntrlWR #HOM2
-    mov a, r4
-    acall putdigitLCD
-    mov a, r3
-    acall putdigitLCD
+    mov a, r4               ; poprawka
+    add a, #30H
+    acall putcharLCD
+    mov a, r3               ; poprawka
+    add a, #30H
+    acall putcharLCD
 
 FINAL: 
     RET
 
-; -------------------------------------------------------------
-; PROCEDURY POMOCNICZE (Odświeżanie pamięci klawiszy)
-; -------------------------------------------------------------
 ostatniedwie: 
     mov a, r3
     mov r4, a
     movx a, @dptr
     mov r3, a
     acall delay
-    acall EKRAN             ; <-- DODANE ODŚWIEŻANIE EKRANU
-    ljmp CZEKAM
+    ljmp key_1
 
-ustawgodzine:
-    mov a, r4
-    mov b, #10
-    mul ab
-    add a, r3
-    mov b, #24
-    div ab
-    mov r5, b
-    acall delay
-    acall EKRAN             ; <-- DODANE ODŚWIEŻANIE EKRANU
-    ljmp CZEKAM
-
-ustawminute:
-    mov a, r4
-    mov b, #10
-    mul ab
-    add a, r3
-    mov b, #60
-    div ab
-    mov r6, b
-    acall delay
-    acall EKRAN             ; <-- DODANE ODŚWIEŻANIE EKRANU
-    ljmp CZEKAM
-
-; -------------------------------------------------------------
-; PROGRAM GŁÓWNY
-; -------------------------------------------------------------
+; program glówny
 START: 
     init_LCD
     MOV TMOD, #01H          ; konfiguracja timera
@@ -302,22 +280,16 @@ key_1:
     clr c
     subb a, r1
     jz key_2
-    
     mov a, r2
     mov dph, #80h
     mov dpl, a
     movx a, @dptr
     clr c
     subb a, #"A"
-    jz START_TIMER_A
-    ljmp ostatniedwie       ; Zoptymalizowany skok dla cyfr
-
-START_TIMER_A:
+    jnz ostatniedwie
     MOV TH0, #3CH           ; ladowanie
     MOV TL0, #0B0H          ; stalej timera na 50ms
     SETB TR0                ; timer start
-    acall delay
-    ljmp CZEKAM
 
 key_2: 
     mov r1, #LINE_2
@@ -329,20 +301,14 @@ key_2:
     clr c
     subb a, r1
     jz key_3
-    
     mov a, r2
     mov dph, #80h
     mov dpl, a
     movx a, @dptr
     clr c
     subb a, #"B"
-    jz STOP_TIMER_B
-    ljmp ostatniedwie       ; Zoptymalizowany skok dla cyfr
-
-STOP_TIMER_B:
+    jnz jumpostatniedwie
     clr TR0
-    acall delay
-    ljmp CZEKAM
 
 key_3: 
     mov r1, #LINE_3
@@ -354,18 +320,13 @@ key_3:
     clr c
     subb a, r1
     jz key_4
-    
     mov a, r2
     mov dph, #80h
     mov dpl, a
     movx a, @dptr
     clr c
     subb a, #"C"
-    jz RESET_CLOCK_C
-    ljmp ostatniedwie       ; Zoptymalizowany skok dla cyfr
-
-RESET_CLOCK_C:
-    acall delay
+    jnz jumpostatniedwie
     ljmp START
 
 key_4: 
@@ -377,33 +338,22 @@ key_4:
     mov r2, a
     clr c
     subb a, r1
-    jz check_timer          ; <-- NAPRAWIONO: Brakowało tego skoku!
-
     mov a, r2
     mov dph, #80h
     mov dpl, a
-    
     movx a, @dptr
     clr c
     subb a, #"#"
     jz ustawgodzine
-    
-    movx a, @dptr           ; Przeładuj znak
-    clr c                   ; <-- NAPRAWIONO: Brakowało CLR C!
+    movx a, @dptr
     subb a, #"*"
     jz ustawminute
-    
     movx a, @dptr
-    jz NUMBER_ZERO          ; Sprawdź czy wyciągnął zero (cyfra 0 z tablicy)
-    ljmp CZEKAM
-
-NUMBER_ZERO:
-    ljmp ostatniedwie
-
-check_timer:
+    jz jumpostatniedwie
+    
     MOV A, R0               ; czekam, a timer
     JNZ CZEKAM              ; mierzy laczny czas 1s
-    MOV R0, #20             ; po zgloszeniu przerwania - ustawiam na nowo
+    MOV R0, #20             ; po zgloszeniu przerwania - ustawiam na nowo licznik odmierzen 20 x 50ms
     ACALL ZEGAR             ; uruchomienie procedury oblugi i wyswietlenia zegara
     MOV A, P1               ; zmiana
     CPL A                   ; swiecenia
@@ -413,5 +363,40 @@ check_timer:
     NOP
     NOP
     JMP $
+
+ustawgodzine:
+    mov a, r4
+    mov b, #10
+    mul ab
+    add a, r3               ; wyliczona wartosc
+    mov r2, a               ; tymczasowa kopia wpisanej wartosci
+    clr c
+    subb a, #24             ; sprawdzenie czy < 24
+    jnc blad_h              ; jesli nie (>= 24), omin zapis
+    mov a, r2               
+    mov r5, a               ; poprawna wartosc wgrywana do godzin
+    mov r3, #0              ; wyczyszczenie bufora na LCD po zapisie
+    mov r4, #0
+blad_h:
+    ljmp key_1
+
+ustawminute:
+    mov a, r4
+    mov b, #10
+    mul ab
+    add a, r3               ; wyliczona wartosc
+    mov r2, a               ; tymczasowa kopia wpisanej wartosci
+    clr c
+    subb a, #60             ; sprawdzenie czy < 60
+    jnc blad_m              ; jesli nie (>= 60), omin zapis
+    mov a, r2
+    mov r6, a               ; poprawna wartosc wgrywana do minut
+    mov r3, #0              ; wyczyszczenie bufora na LCD po zapisie
+    mov r4, #0
+blad_m:
+    ljmp key_1
+
+jumpostatniedwie:
+    ljmp ostatniedwie
 
     END START
