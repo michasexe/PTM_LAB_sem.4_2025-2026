@@ -237,7 +237,7 @@ key_1:
     movx a, @dptr
     clr c
     subb a, #"A"
-    jz KLAWISZ_A            ; Odwrócony warunek i długi skok (ominięcie błędu out of range)
+    jz KLAWISZ_A            
     ljmp ostatniedwie
 KLAWISZ_A:
     MOV TH0, #3CH           
@@ -260,7 +260,7 @@ key_2:
     movx a, @dptr
     clr c
     subb a, #"B"
-    jz KLAWISZ_B            ; Odwrócony warunek i długi skok (ominięcie błędu out of range)
+    jz KLAWISZ_B            
     ljmp ostatniedwie
 KLAWISZ_B:
     clr TR0
@@ -281,7 +281,7 @@ key_3:
     movx a, @dptr
     clr c
     subb a, #"C"
-    jz KLAWISZ_C            ; Odwrócony warunek i długi skok (ominięcie błędu out of range)
+    jz KLAWISZ_C            
     ljmp ostatniedwie
 KLAWISZ_C:
     ljmp START
@@ -308,13 +308,13 @@ key_4:
     subb a, #"*"
     jz ustawminute
     movx a, @dptr
-    jnz OMIN_OST_4          ; Odwrócony warunek i długi skok (ominięcie błędu out of range)
+    jnz OMIN_OST_4          
     ljmp ostatniedwie
 OMIN_OST_4:
     
 sprawdz_timer:
     MOV A, R0               
-    JZ ODLICZONO_1S         ; Odwrócony warunek (ominięcie błędu out of range dla JNZ CZEKAM)
+    JZ ODLICZONO_1S         
     LJMP CZEKAM             
 ODLICZONO_1S:
     MOV R0, #20             
@@ -325,6 +325,24 @@ ODLICZONO_1S:
     LJMP CZEKAM             
 
 ustawgodzine:
+CZEKAJ_PUSZCZ_H:
+    MOV A, R0               ; Obsluga timera w czasie czekania na puszczenie przycisku
+    JNZ CZEKAJ_DALEJ_H
+    MOV R0, #20             
+    ACALL ZEGAR             
+    MOV A, P1               
+    CPL A                   
+    MOV P1, A               
+CZEKAJ_DALEJ_H:
+    mov a, #LINE_4
+    mov P5, a
+    mov a, P7
+    anl a, #LINE_4
+    clr c
+    subb a, #LINE_4
+    jnz CZEKAJ_PUSZCZ_H     ; Wracaj do góry, dopóki klawisz jest wciśnięty
+
+    ; Po puszczeniu klawisza:
     mov a, r4
     mov b, #10
     mul ab
@@ -342,6 +360,24 @@ blad_h:
     ljmp key_1
 
 ustawminute:
+CZEKAJ_PUSZCZ_M:
+    MOV A, R0               ; Obsluga timera w czasie czekania na puszczenie przycisku
+    JNZ CZEKAJ_DALEJ_M
+    MOV R0, #20             
+    ACALL ZEGAR             
+    MOV A, P1               
+    CPL A                   
+    MOV P1, A               
+CZEKAJ_DALEJ_M:
+    mov a, #LINE_4
+    mov P5, a
+    mov a, P7
+    anl a, #LINE_4
+    clr c
+    subb a, #LINE_4
+    jnz CZEKAJ_PUSZCZ_M     ; Wracaj do góry, dopóki klawisz jest wciśnięty
+
+    ; Po puszczeniu klawisza:
     mov a, r4
     mov b, #10
     mul ab
