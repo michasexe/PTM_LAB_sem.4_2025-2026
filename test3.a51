@@ -157,81 +157,87 @@ keyascii_num:
 // wyznaczanie biezacej wartosci zegara i jego wyswietlanie na LCD
 ZEGAR: 
     INC R7                  ; licznik sekund
-    MOV A, R7               ; obsluga sekund
+    MOV A, R7               
     CLR C
-    SUBB A, #60             ; przepelnienie sekund
+    SUBB A, #60             
     JZ MINUTY
     
-    LCDcntrlWR #HOME        ; wyswietlenie calego zegara
+    LCDcntrlWR #HOME        
     MOV A, R5               ; godziny
     ACALL putdigitLCD
-    MOV A, #":"             ; separator
+    MOV A, #":"             
     ACALL putcharLCD
     MOV A, R6               ; minuty
     ACALL putdigitLCD
-    MOV A, #":"             ; separator
+    MOV A, #":"             
     ACALL putcharLCD
     MOV A, R7               ; sekundy
     ACALL putdigitLCD
     LCDcntrlWR #HOM2
-    mov a, r4
-    acall putdigitLCD
-    mov a, r3
-    acall putdigitLCD
+    mov a, r4               
+    add a, #30H
+    acall putcharLCD
+    mov a, r3               
+    add a, #30H
+    acall putcharLCD
     JMP FINAL
 
 MINUTY: 
-    MOV R7, #00H            ; zerowanie sekund
-    INC R6                  ; licznik minut
-    MOV A, R6               ; obsluga minut
+    MOV R7, #00H            
+    INC R6                  
+    MOV A, R6               
     CLR C
-    SUBB A, #60             ; przepelnienie minut
+    SUBB A, #60             
     JZ GODZINY
     
-    LCDcntrlWR #HOME        ; wyswietlenie calego zegara
-    MOV A, R5               ; godziny
+    LCDcntrlWR #HOME        
+    MOV A, R5               
     ACALL putdigitLCD
-    MOV A, #":"             ; separator
+    MOV A, #":"             
     ACALL putcharLCD
-    MOV A, R6               ; minuty
+    MOV A, R6               
     ACALL putdigitLCD
-    MOV A, #":"             ; separator
+    MOV A, #":"             
     ACALL putcharLCD
-    MOV A, R7               ; sekundy
+    MOV A, R7               
     ACALL putdigitLCD
     LCDcntrlWR #HOM2
-    mov a, r4
-    acall putdigitLCD
-    mov a, r3
-    acall putdigitLCD
+    mov a, r4               
+    add a, #30H
+    acall putcharLCD
+    mov a, r3               
+    add a, #30H
+    acall putcharLCD
     JMP FINAL
 
 GODZINY: 
-    MOV R6, #00H            ; zerowanie minut
-    INC R5                  ; licznik godzin
+    MOV R6, #00H            
+    INC R5                  
     MOV A, R5
     CLR C
-    SUBB A, #24             ; przepelenienie godzin - doba
+    SUBB A, #24             
     JNZ EKRAN
-    MOV R5, #00H            ; zerowanie godzin
+    MOV R5, #00H            
 
 EKRAN: 
-    LCDcntrlWR #HOME        ; wyswietlenie calego zegara
-    MOV A, R5               ; godziny
+    LCDcntrlWR #HOME        
+    MOV A, R5               
     ACALL putdigitLCD
-    MOV A, #":"             ; separator
+    MOV A, #":"             
     ACALL putcharLCD
-    MOV A, R6               ; minuty
+    MOV A, R6               
     ACALL putdigitLCD
-    MOV A, #":"             ; separator
+    MOV A, #":"             
     ACALL putcharLCD
-    MOV A, R7               ; sekundy
+    MOV A, R7               
     ACALL putdigitLCD
     LCDcntrlWR #HOM2
-    mov a, r4
-    acall putdigitLCD
-    mov a, r3
-    acall putdigitLCD
+    mov a, r4               
+    add a, #30H
+    acall putcharLCD
+    mov a, r3               
+    add a, #30H
+    acall putcharLCD
 
 FINAL: 
     RET
@@ -247,18 +253,18 @@ ostatniedwie:
 ; program glówny
 START: 
     init_LCD
-    MOV TMOD, #01H          ; konfiguracja timera
-    MOV TH0, #3CH           ; ladowanie
-    MOV TL0, #0B0H          ; stalej timera na 50ms
-    SETB TR0                ; timer start
-    MOV IE, #82H            ; przerwania wlacz
-    MOV R5, #00H            ; inicjacja zegara
+    MOV TMOD, #01H          
+    MOV TH0, #3CH           
+    MOV TL0, #0B0H          
+    SETB TR0                
+    MOV IE, #82H            
+    MOV R5, #00H            
     MOV R6, #00H
     MOV R7, #0FFH
-    ACALL ZEGAR             ; wyswietlenie zainicjowanego zegara
+    ACALL ZEGAR             
     MOV A, #0FH
-    MOV P1, A               ; zapalenie diód
-    MOV R0, #20             ; licznik odmierzen 20 x 50ms
+    MOV P1, A               
+    MOV R0, #20             
     acall keyascii_num
     mov r3, #0
     mov r4, #0
@@ -281,9 +287,9 @@ key_1:
     clr c
     subb a, #"A"
     jnz ostatniedwie
-    MOV TH0, #3CH           ; ladowanie
-    MOV TL0, #0B0H          ; stalej timera na 50ms
-    SETB TR0                ; timer start
+    MOV TH0, #3CH           
+    MOV TL0, #0B0H          
+    SETB TR0                
 
 key_2: 
     mov r1, #LINE_2
@@ -332,6 +338,7 @@ key_4:
     mov r2, a
     clr c
     subb a, r1
+    jz sprawdz_timer        ; <--- BARDZO WAZNE: Bez tego skoku pętla była zablokowana!
     mov a, r2
     mov dph, #80h
     mov dpl, a
@@ -340,18 +347,21 @@ key_4:
     subb a, #"#"
     jz ustawgodzine
     movx a, @dptr
+    clr c                   ; <--- Zabezpieczenie przed błędem odejmowania
     subb a, #"*"
     jz ustawminute
     movx a, @dptr
     jz jumpostatniedwie
-    MOV A, R0               ; czekam, a timer
-    JNZ CZEKAM              ; mierzy laczny czas 1s
-    MOV R0, #20             ; po zgloszeniu przerwania - ustawiam na nowo licznik odmierzen 20 x 50ms
-    ACALL ZEGAR             ; uruchomienie procedury oblugi i wyswietlenia zegara
-    MOV A, P1               ; zmiana
-    CPL A                   ; swiecenia
-    MOV P1, A               ; diód
-    JMP CZEKAM              ; czekam na kolejna sekunde
+    
+sprawdz_timer:
+    MOV A, R0               
+    JNZ CZEKAM              
+    MOV R0, #20             
+    ACALL ZEGAR             
+    MOV A, P1               
+    CPL A                   
+    MOV P1, A               
+    JMP CZEKAM              
     NOP
     NOP
     NOP
@@ -361,20 +371,34 @@ ustawgodzine:
     mov a, r4
     mov b, #10
     mul ab
-    add a, r3
-    mov b, #24
-    div ab
-    mov r5, b
+    add a, r3               
+    mov r2, a               
+    clr c
+    subb a, #24             
+    jnc blad_h              
+    mov a, r2               
+    mov r5, a               ; poprawna wartosc wgrywana do godzin
+    mov r3, #0              
+    mov r4, #0
+    acall EKRAN             ; <--- Wymuszenie natychmiastowego odrysowania czasu na LCD
+blad_h:
     ljmp key_1
 
 ustawminute:
     mov a, r4
     mov b, #10
     mul ab
-    add a, r3
-    mov b, #60
-    div ab
-    mov r6, b
+    add a, r3               
+    mov r2, a               
+    clr c
+    subb a, #60             
+    jnc blad_m              
+    mov a, r2
+    mov r6, a               ; poprawna wartosc wgrywana do minut
+    mov r3, #0              
+    mov r4, #0
+    acall EKRAN             ; <--- Wymuszenie natychmiastowego odrysowania czasu na LCD
+blad_m:
     ljmp key_1
 
 jumpostatniedwie:
