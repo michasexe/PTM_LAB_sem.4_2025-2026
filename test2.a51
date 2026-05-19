@@ -1,428 +1,539 @@
 ljmp start
 
-P5          equ 0F8H
-P7          equ 0DBH
-LCDstatus   equ 0FF2EH      ; adres do odczytu gotowosci LCD
-LCDcontrol  equ 0FF2CH      ; adres do podania bajtu sterujacego LCD
-LCDdataWR   equ 0FF2DH      ; adres do podania kodu ASCII na LCD
+P5 equ 0F8H
+P7 equ 0DBH
+
+LCDstatus  equ 0FF2EH       ; adres do odczytu gotowosci LCD
+LCDcontrol equ 0FF2CH       ; adres do podania bajtu sterujacego LCD
+LCDdataWR  equ 0FF2DH       ; adres do podania kodu ASCII na LCD
 
 // bajty sterujace LCD, inne dostepne w opisie LCD na stronie WWW
-#define HOME        0x80    // put cursor to second line
-#define INITDISP    0x38    // LCD init (8-bit mode)
-#define HOM2        0xc0    // put cursor to second line
-#define LCDON       0x0e    // LCD nn, cursor off, blinking off
-#define CLEAR       0x01    // LCD display clear
-
+#define  HOME     0x80     // put cursor to second line  
+#define  INITDISP 0x38     // LCD init (8-bit mode)  
+#define  HOM2     0xc0     // put cursor to second line  
+#define  LCDON    0x0e     // LCD nn, cursor off, blinking off
+#define  CLEAR    0x01     // LCD display clear
+	
 // linie klawiatury - sterowanie na port P5
-#define LINE_1      0x7f    // 0111 1111
-#define LINE_2      0xbf    // 1011 1111
-#define LINE_3      0xdf    // 1101 1111
-#define LINE_4      0xef    // 1110 1111
-#define ALL_LINES   0x0f    // 0000 1111
+#define LINE_1		0x7f	// 0111 1111
+#define LINE_2		0xbf	// 1011 1111
+#define	LINE_3		0xdf	// 1101 1111
+#define LINE_4		0xef	// 1110 1111
 
-    ORG 000BH               ; obsluga przerwania
-    MOV TH0, #3CH           ; przeladowanie
-    MOV TL0, #0B0H          ; stalej timera na 50ms
-    DEC R0                  ; korekta licznika
-    RETI                    ; powrót z przerwania
+ORG 000BH     ; obsluga przerwania
+	CPL P3.2	; ruch membrana brzeczyka
+	PUSH ACC	; na wszelki wypadek
+	MOV A, R6	; przeladowanie
+	MOV TH0, A 	; stalej timera
+	MOV A, R7
+	MOV TL0, A
+	POP ACC      	; odtworzenie akumulatora
+	RETI          ; powrot z przerwania
 
-    org 0100H
+
+org 0477H
+	jeden:	db "C1",00
+org 057BH
+	dwa:	db "Cis1",00
+org 047DH
+	trzy:	db "D1",00
+org 067EH
+	AA:	db "Dis1",00
+org 04B7H
+	cztery:	db "E1",00
+org 05BBH
+	piec:	db "F1",00
+org 04BDH
+	szesc:	db "Fis1",00
+org 05BEH
+	 BB:	db "G1",00
+org 04D7H
+	siedem:	db "Gis1",00
+org 05DBH
+	osiem:	db "A1",00
+org 04DDH
+	dziewiec: db "B1",00
+org 05DEH
+	CC:	db "H1",00
+org 04E7H
+	gwiazda: db "C2",00
+org 05EBH
+	zero:	db "Cis2",00
+org 04EDH
+	plotek:	db "D2",00
+org 06EEH
+	DD:	db "Dis2",00
+
+
+org 0100H
 
 // macro do wprowadzenia bajtu sterujacego na LCD
-LCDcntrlWR MACRO x          ; x – parametr wywolania macra – bajt sterujacy
-    LOCAL loop              ; LOCAL oznacza ze etykieta loop moze sie powtórzyc w programie
-loop: 
-    MOV DPTR, #LCDstatus    ; DPTR zaladowany adresem statusu
-    MOVX A, @DPTR           ; pobranie bajtu z biezacym statusem LCD
-    JB ACC.7, loop          ; testowanie najstarszego bitu akumulatora
-                            ; – wskazuje gotowosc LCD
-    MOV DPTR, #LCDcontrol   ; DPTR zaladowany adresem do podania bajtu sterujacego
-    MOV A, x                ; do akumulatora trafia argument wywolania macra–bajt sterujacy
-    MOVX @DPTR, A           ; bajt sterujacy podany do LCD – zadana akcja widoczna na LCD
-ENDM
-
+LCDcntrlWR MACRO x          ; x - parametr wywolania macra - bajt sterujacy
+           LOCAL loop       ; LOCAL oznacza ze etykieta loop moze sie powtorzyc w programie
+loop: MOV  DPTR,#LCDstatus  ; DPTR zaladowany adresem statusu
+      MOVX A,@DPTR          ; pobranie bajtu z biezacym statusem LCD
+      JB   ACC.7,loop       ; testowanie najstarszego bitu akumulatora
+                            ; wskazuje gotowosc LCD
+      MOV  DPTR,#LCDcontrol ; DPTR zaladowany adresem do podania bajtu sterujacego
+      MOV  A, x             ; do akumulatora trafia argument wywolania macra bajt sterujacy
+      MOVX @DPTR,A          ; bajt sterujacy podany do LCD - zadana akcja widoczna na LCD
+      ENDM
+	  
 // macro do wypisania znaku ASCII na LCD, znak ASCII przed wywolaniem macra ma byc w A
 LCDcharWR MACRO
-    LOCAL tutu              ; LOCAL oznacza ze etykieta tutu moze sie powtórzyc w programie
-    PUSH ACC                ; odlozenie biezacej zawartosci akumulatora na stos
-tutu: 
-    MOV DPTR, #LCDstatus    ; DPTR zaladowany adresem statusu
-    MOVX A, @DPTR           ; pobranie bajtu z biezacym statusem LCD
-    JB ACC.7, tutu          ; testowanie najstarszego bitu akumulatora
-                            ; – wskazuje gotowosc LCD
-    MOV DPTR, #LCDdataWR    ; DPTR zaladowany adresem do podania bajtu sterujacego
-    POP ACC                 ; w akumulatorze ponownie kod ASCII znaku na LCD
-    MOVX @DPTR, A           ; kod ASCII podany do LCD – znak widoczny na LCD
-ENDM
-
-// macro do inicjalizacji wyswietlacza – bez parametrów
+      LOCAL tutu            ; LOCAL oznacza ze etykieta tutu moze sie powtorzyc w programie
+      PUSH ACC              ; odlozenie biezacej zawartosci akumulatora na stos
+tutu: MOV  DPTR,#LCDstatus  ; DPTR zaladowany adresem statusu
+      MOVX A,@DPTR          ; pobranie bajtu z biezacym statusem LCD
+      JB   ACC.7,tutu       ; testowanie najstarszego bitu akumulatora
+                            ; wskazuje gotowosc LCD
+      MOV  DPTR,#LCDdataWR  ; DPTR zaladowany adresem do podania bajtu sterujacego
+      POP  ACC              ; w akumulatorze ponownie kod ASCII znaku na LCD
+      MOVX @DPTR,A          ; kod ASCII podany do LCD - znak widoczny na LCD
+      ENDM
+	  
+// macro do inicjalizacji wyswietlacza - bez parametrow
 init_LCD MACRO
-    LCDcntrlWR #INITDISP    ; wywolanie macra LCDcntrlWR – inicjalizacja LCD
-    LCDcntrlWR #CLEAR       ; wywolanie macra LCDcntrlWR – czyszczenie LCD
-    LCDcntrlWR #LCDON       ; wywolanie macra LCDcntrlWR – konfiguracja kursora
-ENDM
+         LCDcntrlWR #INITDISP ; wywolanie macra LCDcntrlWR - inicjalizacja LCD
+         LCDcntrlWR #CLEAR    ; wywolanie macra LCDcntrlWR - czyszczenie LCD
+         LCDcntrlWR #LCDON    ; wywolanie macra LCDcntrlWR - konfiguracja kursora
+         ENDM
 
-delay: 
-    mov r1, #0FFH
-dwa: 
-    mov r2, #0FFH
-trzy: 
-    djnz r2, trzy
-    djnz r1, dwa
-    ret
+	 delay:	mov r1, #0FFH
+	zwei:	mov r2, #0FFH
+    drei:	djnz r2, drei
+			djnz r1, zwei
+			ret
 
+		 
 // funkcja wypisania liczby dla potrzeb zegara
-putdigitLCD: 
-    mov b, #10
-    div ab                  ; uzyskanie cyfry dziesiatek
-    add a, #30H             ; konwersja cyfry na kod ASCII
-    acall putcharLCD
-    mov a, b                ; ladowanie cyfry jednosci
-    add a, #30H             ; konwersja na LCD
-    acall putcharLCD
-    ret
+putdigitLCD:	mov b, #10
+				div ab				; uzyskanie cyfry dziesiatek
+				add a, #30H			; konwersja cyfry na kod ASCII
+				acall putcharLCD
+				mov a, b			; ladowanie cyfry jednosci
+				add a, #30H			; konwersja na LCD
+				acall putcharLCD
+				ret
 
 // funkcaj wypisywania znaku na LCD
-putcharLCD: 
-    LCDcharWR
-    ret
+putcharLCD:	LCDcharWR
+			ret
 
-// tablica przekodowania klawisze - ASCII w XRAM
-keyascii_num: 
-    mov dptr, #80EBH
-    mov a, #0
-    movx @dptr, a
-    
-    mov dptr, #8077H
-    mov a, #1
-    movx @dptr, a
-    
-    mov dptr, #807BH
-    mov a, #2
-    movx @dptr, a
-    
-    mov dptr, #807DH
-    mov a, #3
-    movx @dptr, a
-    
-    mov dptr, #80B7H
-    mov a, #4
-    movx @dptr, a
-    
-    mov dptr, #80BBH
-    mov a, #5
-    movx @dptr, a
-    
-    mov dptr, #80BDH
-    mov a, #6
-    movx @dptr, a
-    
-    mov dptr, #80D7H
-    mov a, #7
-    movx @dptr, a
-    
-    mov dptr, #80DBH
-    mov a, #8
-    movx @dptr, a
-    
-    mov dptr, #80DDH
-    mov a, #9
-    movx @dptr, a
-    
-    mov dptr, #807EH
-    mov a, #"A"
-    movx @dptr, a
-    
-    mov dptr, #80BEH
-    mov a, #"B"
-    movx @dptr, a
-    
-    mov dptr, #80DEH
-    mov a, #"C"
-    movx @dptr, a
-    
-    mov dptr, #80EEH
-    mov a, #"D"
-    movx @dptr, a
-    
-    mov dptr, #80E7H
-    mov a, #"*"
-    movx @dptr, a
-    
-    mov dptr, #80EDH
-    mov a, #"#"
-    movx @dptr, a
-    ret
+		
+// tablica przekodowania klawisze - dzwieki w XRAM
 
-// wyznaczanie biezacej wartosci zegara i jego wyswietlanie na LCD
-ZEGAR: 
-    INC R7                  ; licznik sekund
-    MOV A, R7               ; obsluga sekund
-    CLR C
-    SUBB A, #60             ; przepelnienie sekund
-    JZ MINUTY
-    
-    LCDcntrlWR #HOME        ; wyswietlenie calego zegara
-    MOV A, R5               ; godziny
-    ACALL putdigitLCD
-    MOV A, #":"             ; separator
-    ACALL putcharLCD
-    MOV A, R6               ; minuty
-    ACALL putdigitLCD
-    MOV A, #":"             ; separator
-    ACALL putcharLCD
-    MOV A, R7               ; sekundy
-    ACALL putdigitLCD
-    
-    LCDcntrlWR #HOM2
-    mov a, r4
-    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
-    acall putcharLCD
-    mov a, r3
-    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
-    acall putcharLCD
-    JMP FINAL
+keymuz:		
+			mov dptr, #8077H
+			mov a, #89H
+			movx @dptr, a
+			
+			mov dptr, #807BH
+			mov a, #0F4H
+			movx @dptr, a
+			
+			mov dptr, #807DH
+			mov a, #5AH
+			movx @dptr, a
 
-MINUTY: 
-    MOV R7, #00H            ; zerowanie sekund
-    INC R6                  ; licznik minut
-    MOV A, R6               ; obsluga minut
-    CLR C
-    SUBB A, #60             ; przepelnienie minut
-    JZ GODZINY
-    
-    LCDcntrlWR #HOME        ; wyswietlenie calego zegara
-    MOV A, R5               ; godziny
-    ACALL putdigitLCD
-    MOV A, #":"             ; separator
-    ACALL putcharLCD
-    MOV A, R6               ; minuty
-    ACALL putdigitLCD
-    MOV A, #":"             ; separator
-    ACALL putcharLCD
-    MOV A, R7               ; sekundy
-    ACALL putdigitLCD
-    
-    LCDcntrlWR #HOM2
-    mov a, r4
-    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
-    acall putcharLCD
-    mov a, r3
-    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
-    acall putcharLCD
-    JMP FINAL
+			mov dptr, #807EH
+			mov a, #0B9H
+			movx @dptr, a
 
-GODZINY: 
-    MOV R6, #00H            ; zerowanie minut
-    INC R5                  ; licznik godzin
-    MOV A, R5
-    CLR C
-    SUBB A, #24             ; przepelenienie godzin - doba
-    JNZ EKRAN
-    MOV R5, #00H            ; zerowanie godzin
+			mov dptr, #80B7H
+			mov a, #13H
+			movx @dptr, a
+			
+			mov dptr, #80BBH
+			mov a, #68H
+			movx @dptr, a
+			
+			mov dptr, #80BDH
+			mov a, #0B9H
+			movx @dptr, a
 
-EKRAN: 
-    LCDcntrlWR #HOME        ; wyswietlenie calego zegara
-    MOV A, R5               ; godziny
-    ACALL putdigitLCD
-    MOV A, #":"             ; separator
-    ACALL putcharLCD
-    MOV A, R6               ; minuty
-    ACALL putdigitLCD
-    MOV A, #":"             ; separator
-    ACALL putcharLCD
-    MOV A, R7               ; sekundy
-    ACALL putdigitLCD
-    
-    LCDcntrlWR #HOM2
-    mov a, r4
-    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
-    acall putcharLCD
-    mov a, r3
-    add a, #30H             ; ZMIANA: wypisywanie cyfry zamiast div 10
-    acall putcharLCD
+			mov dptr, #80BEH
+			mov a, #04H
+			movx @dptr, a
 
-FINAL: 
-    RET
+			mov dptr, #80D7H
+			mov a, #4CH
+			movx @dptr, a
 
-ostatniedwie: 
-    mov a, r3
-    mov r4, a
-    movx a, @dptr
-    mov r3, a
-    acall delay
-    ljmp key_1
+			mov dptr, #80DBH
+			mov a, #90H
+			movx @dptr, a
 
-; program glówny
-START: 
-    init_LCD
-    MOV TMOD, #01H          ; konfiguracja timera
-    MOV TH0, #3CH           ; ladowanie
-    MOV TL0, #0B0H          ; stalej timera na 50ms
-    CLR TR0                 ; ZMIANA: timer domyslnie wylaczony (czekamy na ust. czasu i klawisz 'A')
-    MOV IE, #82H            ; przerwania wlacz
-    MOV R5, #00H            ; inicjacja zegara
-    MOV R6, #00H
-    MOV R7, #0FFH
-    ACALL ZEGAR             ; wyswietlenie zainicjowanego zegara
-    MOV A, #0FH
-    MOV P1, A               ; zapalenie diód
-    MOV R0, #20             ; licznik odmierzen 20 x 50ms
-    acall keyascii_num
-    mov r3, #0
-    mov r4, #0
+			mov dptr, #80DDH
+			mov a, #0CFH
+			movx @dptr, a
 
-CZEKAM:
-key_1: 
-    mov r1, #LINE_1
-    mov a, r1
-    mov P5, a
-    mov a, P7
-    anl a, r1
-    mov r2, a
-    clr c
-    subb a, r1
-    jz key_2
-    mov a, r2
-    mov dph, #80h
-    mov dpl, a
-    movx a, @dptr
-    clr c
-    subb a, #"A"
-    jnz ostatniedwie
-    MOV TH0, #3CH           ; ladowanie
-    MOV TL0, #0B0H          ; stalej timera na 50ms
-    SETB TR0                ; timer start po nacisnieciu klawisza A
+			mov dptr, #80DEH
+			mov a, #0CH
+			movx @dptr, a
 
-key_2: 
-    mov r1, #LINE_2
-    mov a, r1
-    mov P5, a
-    mov a, P7
-    anl a, r1
-    mov r2, a
-    clr c
-    subb a, r1
-    jz key_3
-    mov a, r2
-    mov dph, #80h
-    mov dpl, a
-    movx a, @dptr
-    clr c
-    subb a, #"B"
-    jnz jumpostatniedwie
-    clr TR0                 ; zatrzymanie po klawiszu B
+			mov dptr, #80E7H
+			mov a, #45H
+			movx @dptr, a
 
-key_3: 
-    mov r1, #LINE_3
-    mov a, r1
-    mov P5, a
-    mov a, P7
-    anl a, r1
-    mov r2, a
-    clr c
-    subb a, r1
-    jz key_4
-    mov a, r2
-    mov dph, #80h
-    mov dpl, a
-    movx a, @dptr
-    clr c
-    subb a, #"C"
-    jnz jumpostatniedwie
-    ljmp START
+			mov dptr, #80EBH
+			mov a, #7AH
+			movx @dptr, a
+			
+			mov dptr, #80EDH
+			mov a, #0ADH
+			movx @dptr, a
 
-key_4: 
-    mov r1, #LINE_4
-    mov a, r1
-    mov P5, a
-    mov a, P7
-    anl a, r1
-    mov r2, a
-    clr c
-    subb a, r1
-    jz sprawdz_timer        ; ZMIANA: Skok gdy zaden przycisk nie jest wcisniety
-    
-    mov a, r2
-    mov dph, #80h
-    mov dpl, a
-    movx a, @dptr
-    clr c
-    subb a, #"#"
-    jz ustawgodzine
-    movx a, @dptr
-    clr c
-    subb a, #"*"
-    jz ustawminute
-    movx a, @dptr
-    jz jumpostatniedwie
-    
-sprawdz_timer:              ; ZMIANA: Restrukturyzacja, by uniknac 'target out of range'
-    MOV A, R0               
-    JZ ODLICZONO_1S
-    LJMP CZEKAM             ; jesli R0 != 0, po prostu zrob nastepny obieg
-    
-ODLICZONO_1S:
-    MOV R0, #20             ; po zgloszeniu przerwania - ustawiam na nowo licznik odmierzen 20 x 50ms
-    ACALL ZEGAR             ; uruchomienie procedury oblugi i wyswietlenia zegara
-    MOV A, P1               ; zmiana
-    CPL A                   ; swiecenia
-    MOV P1, A               ; diód
-    LJMP CZEKAM             ; czekam na kolejna sekunde
+			mov dptr, #80EEH
+			mov a, #0DDH
+			movx @dptr, a
+			
+			mov dptr, #8177H
+			mov a, #0F8H
+			movx @dptr, a
+			
+			mov dptr, #817BH
+			mov a, #0F8H
+			movx @dptr, a
+			
+			mov dptr, #817DH
+			mov a, #0F9H
+			movx @dptr, a
 
-ustawgodzine:
-czekaj_puszcz_h:            ; ZMIANA: czekanie na zwolnienie klawisza #
-    mov a, #LINE_4
-    mov P5, a
-    mov a, P7
-    anl a, #LINE_4
-    clr c
-    subb a, #LINE_4
-    jnz czekaj_puszcz_h
-    
-    mov a, r4
-    mov b, #10
-    mul ab
-    add a, r3
-    mov r2, a
-    clr c
-    subb a, #24             ; ZMIANA: limit 24 zamiast modulo
-    jnc pomin_h
-    mov a, r2
-    mov r5, a
-    mov r3, #0              ; ZMIANA: wyzerowanie po wpisaniu
-    mov r4, #0
-    acall EKRAN             ; ZMIANA: wymuszenie rysowania od razu
-pomin_h:
-    ljmp key_1
+			mov dptr, #817EH
+			mov a, #0F9H
+			movx @dptr, a
 
-ustawminute:
-czekaj_puszcz_m:            ; ZMIANA: czekanie na zwolnienie klawisza *
-    mov a, #LINE_4
-    mov P5, a
-    mov a, P7
-    anl a, #LINE_4
-    clr c
-    subb a, #LINE_4
-    jnz czekaj_puszcz_m
-    
-    mov a, r4
-    mov b, #10
-    mul ab
-    add a, r3
-    mov r2, a
-    clr c
-    subb a, #60             ; ZMIANA: limit 60 zamiast modulo
-    jnc pomin_m
-    mov a, r2
-    mov r6, a
-    mov r3, #0              ; ZMIANA: wyzerowanie po wpisaniu
-    mov r4, #0
-    acall EKRAN             ; ZMIANA: wymuszenie rysowania od razu
-pomin_m:
-    ljmp key_1
+			mov dptr, #81B7H
+			mov a, #0FAH
+			movx @dptr, a
+			
+			mov dptr, #81BBH
+			mov a, #0FAH
+			movx @dptr, a
+			
+			mov dptr, #81BDH
+			mov a, #0FAH
+			movx @dptr, a
 
-jumpostatniedwie:
-    ljmp ostatniedwie
+			mov dptr, #81BEH
+			mov a, #0FBH
+			movx @dptr, a
 
-    END START
+			mov dptr, #81D7H
+			mov a, #0FBH
+			movx @dptr, a
+
+			mov dptr, #81DBH
+			mov a, #0FBH
+			movx @dptr, a
+
+			mov dptr, #81DDH
+			mov a, #0FBH
+			movx @dptr, a
+
+			mov dptr, #81DEH
+			mov a, #0FCH
+			movx @dptr, a
+
+			mov dptr, #81E7H
+			mov a, #0FCH
+			movx @dptr, a
+
+			mov dptr, #81EBH
+			mov a, #0FCH
+			movx @dptr, a
+			
+			mov dptr, #81EDH
+			mov a, #0FCH
+			movx @dptr, a
+
+			mov dptr, #81EEH
+			mov a, #0FCH
+			movx @dptr, a
+
+			// prefiksy do adresow nazw dzwiekow
+			mov dptr, #8277H
+			mov a, #04H
+			movx @dptr, a
+			
+			mov dptr, #827BH
+			mov a, #05H
+			movx @dptr, a
+			
+			mov dptr, #827DH
+			mov a, #04H
+			movx @dptr, a
+
+			mov dptr, #827EH
+			mov a, #06H
+			movx @dptr, a
+
+			mov dptr, #82B7H
+			mov a, #04H
+			movx @dptr, a
+			
+			mov dptr, #82BBH
+			mov a, #05H
+			movx @dptr, a
+			
+			mov dptr, #82BDH
+			mov a, #04H
+			movx @dptr, a
+
+			mov dptr, #82BEH
+			mov a, #05H
+			movx @dptr, a
+
+			mov dptr, #82D7H
+			mov a, #04H
+			movx @dptr, a
+
+			mov dptr, #82DBH
+			mov a, #05H
+			movx @dptr, a
+
+			mov dptr, #82DDH
+			mov a, #04H
+			movx @dptr, a
+
+			mov dptr, #82DEH
+			mov a, #05H
+			movx @dptr, a
+
+			mov dptr, #82E7H
+			mov a, #04H
+			movx @dptr, a
+
+			mov dptr, #82EBH
+			mov a, #05H
+			movx @dptr, a
+			
+			mov dptr, #82EDH
+			mov a, #04H
+			movx @dptr, a
+
+			mov dptr, #82EEH
+			mov a, #06H
+			movx @dptr, a
+					
+			ret
+
+	putstrLCD: clr a
+		movc a, @a+dptr
+		jz koniec
+		push dph
+		push dpl
+		acall putcharLCD
+		pop dpl
+		pop dph
+		inc dptr
+		sjmp putstrLCD
+	koniec: ret
+ 
+// program glowny
+    start:  		acall keymuz
+			MOV TMOD, #01H ; konfiguracja
+			MOV IE, #82H  ; przerwania wlacz
+            
+            init_LCD       ; <--- DODANO: Sprzętowa inicjalizacja wyświetlacza LCD
+            
+	graj:		MOV r4, #00H  ; dotychczasowy klawisz
+ 			CLR TR0      ; timer stop
+		
+	key_1:	mov r0, #LINE_1
+			mov	a, r0
+			mov	P5, a
+			mov a, P7
+			anl a, r0
+			mov r2, a
+			clr c
+			subb a, r0	; sprawdzenie czy cos nacisniete
+			jz key_2
+			mov a, r2
+			clr c
+			subb a, r4	; sprawdzenie czy ten sam guzik znow nacisniety
+			jz key_1
+			mov a, r2
+			mov r4,a	; aktualizacja nowego guzika nacisnietego
+			mov dph, #81h	; ladowanie wartosci TH0 i R6
+			mov dpl, a
+			movx a,@dptr
+			mov R6, a
+			mov TH0, a
+			mov a, r2
+			mov dph, #80h	; ladowanie wartosci TL0 i R7
+			mov dpl, a
+			movx a,@dptr
+			mov R7, a
+			mov TL0, a
+			setb TR0	; wlaczenie timera - wlaczenie dzwieku
+
+			mov a, r4
+			mov dph, #82h
+			mov dpl, a
+			movx a, @dptr
+			mov dph, a
+			mov a, r4
+			mov dpl, a
+			clr a
+			movc a, @a+dptr
+			push dph
+			push dpl
+			LCDcntrlWR #CLEAR
+			LCDcntrlWR #HOME
+			pop dpl
+			pop dph
+			acall putstrLCD
+
+			jmp key_1
+			
+	key_2:	mov r0, #LINE_2
+			mov	a, r0
+			mov	P5, a
+			mov a, P7
+			anl a, r0
+			mov r2, a
+			clr c
+			subb a, r0
+			jz key_3
+			mov a, r2
+			clr c
+			subb a, r4
+			jz key_2
+			mov a, r2
+			mov r4, a
+			mov a, r2
+			mov dph, #81h
+			mov dpl, a
+			movx a,@dptr
+			mov R6, a
+			mov TH0, a
+			mov a, r2
+			mov dph, #80h
+			mov dpl, a
+			movx a,@dptr
+			mov R7, a
+			mov TL0, a
+			setb TR0
+
+			mov a, r4
+			mov dph, #82h
+			mov dpl, a
+			movx a, @dptr
+			mov dph, a
+			mov a, r4
+			mov dpl, a
+			clr a
+			movc a, @a+dptr
+			push dph
+			push dpl
+			LCDcntrlWR #CLEAR
+			LCDcntrlWR #HOME
+			pop dpl
+			pop dph
+			acall putstrLCD
+
+			jmp key_2
+			
+	key_3:	mov r0, #LINE_3
+			mov	a, r0
+			mov	P5, a
+			mov a, P7
+			anl a, r0
+			mov r2, a
+			clr c
+			subb a, r0
+			jz key_4
+			mov a, r2
+			clr c
+			subb a, r4
+			jz key_3
+			mov a, r2
+			mov r4,a
+			mov dph, #81h
+			mov dpl, a
+			movx a,@dptr
+			mov R6, a
+			mov TH0, a
+			mov a, r2
+			mov dph, #80h
+			mov dpl, a
+			movx a,@dptr
+			mov R7, a
+			mov TL0, a
+			setb TR0
+
+			mov a, r4
+			mov dph, #82h
+			mov dpl, a
+			movx a, @dptr
+			mov dph, a
+			mov a, r4
+			mov dpl, a
+			clr a
+			movc a, @a+dptr
+			push dph
+			push dpl
+			LCDcntrlWR #CLEAR
+			LCDcntrlWR #HOME
+			pop dpl
+			pop dph
+			acall putstrLCD
+
+
+			jmp key_3
+			
+	key_4:	mov r0, #LINE_4
+			mov	a, r0
+			mov	P5, a
+			mov a, P7
+			anl a, r0
+			mov r2, a
+			clr c
+			subb a, r0
+			jz dalej
+			mov a, r2
+			clr c
+			subb a, r4
+			jz key_4
+			mov a, r2
+			mov r4,a
+			mov dph, #81h
+			mov dpl, a
+			movx a,@dptr
+			mov R6, a
+			mov TH0, a
+			mov a, r2
+			mov dph, #80h
+			mov dpl, a
+			movx a,@dptr
+			mov R7, a
+			mov TL0, a
+			setb TR0
+
+			mov a, r4
+			mov dph, #82h
+			mov dpl, a
+			movx a, @dptr
+			mov dph, a
+			mov a, r4
+			mov dpl, a
+			clr a
+			movc a, @a+dptr
+			push dph
+			push dpl
+			LCDcntrlWR #CLEAR
+			LCDcntrlWR #HOME
+			pop dpl
+			pop dph
+			acall putstrLCD
+
+			jmp key_4	
+	dalej:		jmp graj    
+ 
+    nop
+    nop
+    nop
+    jmp $
+    end start
