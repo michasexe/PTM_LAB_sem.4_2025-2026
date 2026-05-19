@@ -527,7 +527,10 @@ keymuz:
 			acall putstrLCD
 
 			jmp key_4	
-	dalej:		jmp graj    
+	dalej:		mov a, r4
+				jz powrot			; jesli r4 wynosi 0, oznacza to, ze nic nie bylo wcisniete - pomin
+				LCDcntrlWR #CLEAR	; wykryto puszczenie klawisza - wyczysc ekran LCD
+	powrot:		jmp graj    
  
     nop
     nop
